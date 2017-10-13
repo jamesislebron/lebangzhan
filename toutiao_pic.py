@@ -17,6 +17,8 @@ from multiprocessing import Pool
 from json.decoder import JSONDecodeError
 
 ###some tips：主要增加了存储到mongoDB的过程，图片本身存储在本地，使用md5命名避免重复下载；然后使用了多线程，提高了效率。
+###another tips
+
 #url = 'http://www.toutiao.com/search_content/?offset=0&format=json&keyword=%E8%A1%97%E6%8B%8D&autoload=true&count=20&cur_tab=1'
 client = pymongo.MongoClient(MONGO_URL, connect=False) #由于使用多进程，有的进程并没有建立连接，加false可以进程执行时再建立client
 db = client[MONGO_DB]
@@ -103,7 +105,7 @@ def save_image(content):
 def download_image(url):
     try:
         res = requests.get(url)
-        if res.status_code == 200:
+        if res.status_code == 200
             save_image(res.content)
         return None
     except RequestException:
