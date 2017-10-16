@@ -1,0 +1,57 @@
+#-*- coding:utf8 -*-
+import json
+
+import requests
+import re
+
+from requests import RequestException
+from multiprocessing import Pool
+
+###备注：使用多进程之后，效率增加，但是出现了收集信息不完整，编码错误的问题，在单线程下不会出现问题
+###结果文件中，1-100为单线程结果，后面的为多线程结果。
+
+def get_index_page(url):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit 537.36 (KHTML, like Gecko) Chrome",
+        "Accept": "text/html,application/xhtml+xml,application/xml; q=0.9,image/webp,*/*;q=0.8"
+    }
+    try:
+        res = requests.get(url, headers=headers)
+        if res.status_code == 200:
+            return res.text
+        return None
+    except RequestException:
+        print('访问index页面错误')
+        return None
+
+def parse_index_page(html):
+    pattern = re.compile('<dd>.*?board-index.*?">(.+?)</i>.*?title="(.+?)".*?data-src="(.+?)".*?class="star">(.+?)</p>.+?class="releasetime">(.+?)</p>.*?class="score"><i class="integer">(.+?)</i><i class="fraction">(.+?)</i></p>.*?</dd>', re.S)
+    items = re.findall(pattern, html)
+    for item in items:
+        yield {
+            'rank' : item[0],
+            'title' : item[1],
+            'film_pic' : item[2],
+            'stars' : item[3].strip('\n').strip(),
+            'release_time' : item[4],
+            'score' : item[5].strip() + item[6].strip()
+        }
+
+def save_to_file(content):
+    with open('maoyan_top100.txt', 'a', encoding='utf-8') as f:
+        f.write(json.dumps(content, ensure_ascii=False) + '\n')
+        f.close()
+
+
+def main(offset):
+    url = 'http://maoyan.com/board/4?offset=' + str(offset)
+    html = get_index_page(url)
+    for i in parse_index_page(html):
+        print(i)
+        save_to_file(i)
+
+if __name__ == '__main__':
+    #for i in range(10):
+    #    main(i*10)
+    pool = Pool()
+    pool.map(main, [i * 10 for i in range(10)])
